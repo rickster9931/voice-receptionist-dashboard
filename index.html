@@ -43,6 +43,8 @@
   .brand { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; }
   .brand h1 { font-size: clamp(1.6rem, 4vw, 2.25rem); font-weight: 700; letter-spacing: -0.02em; }
   .demo { font-size: 0.8125rem; font-weight: 600; padding: 0.15rem 0.6rem; border: 1.5px solid var(--accent); border-radius: 99px; }
+  .picker { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.1rem; }
+  .co { color: var(--muted); font-size: 0.8125rem; font-weight: 400; }
   .sub { color: var(--muted); margin-top: 0.4rem; max-width: 44em; }
   .tabs { display: flex; gap: 0.25rem; margin-top: 1.5rem; border-bottom: 1px solid var(--line); overflow-x: auto; }
   .tabs button { background: none; border: 0; border-bottom: 3px solid transparent; padding: 0.6rem 0.9rem; cursor: pointer; color: var(--muted); font-weight: 500; white-space: nowrap; }
@@ -131,10 +133,11 @@
 
 <header class="wrap top">
   <div class="brand">
-    <h1>Sample HVAC Co.</h1>
+    <h1>AI Voice Receptionist</h1>
     <span class="demo">Demo data</span>
   </div>
-  <p class="sub">The owner dashboard from my AI Voice Receptionist project. Every name, phone number, and call on this page is made up for the demo.</p>
+  <p class="sub">The owner dashboard from my AI Voice Receptionist project, which I deployed with three local HVAC companies. The company names, callers, phone numbers, and calls on this page are made up for the demo.</p>
+  <div class="picker" id="picker" role="group" aria-label="Company"></div>
   <div class="tabs" role="tablist" aria-label="Dashboard sections">
     <button role="tab" data-tab="overview" aria-selected="true">Overview</button>
     <button role="tab" data-tab="calls" aria-selected="false">Calls</button>
@@ -178,21 +181,25 @@
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
   /* ---------- Sample data ---------- */
-  var week = [17, 21, 13, 24, 19, 12, 3];   // calls per day, six days ago through today
-  var BOOKED = 41, AFTER_HOURS = 37;
+  // week = calls per day, six days ago through today
+  var companies = {
+    a: { name: 'Sample Heating & Air', week: [5, 6, 3, 7, 5, 2, 2], booked: 11, after: 10 },
+    b: { name: 'Demo Comfort Co.', week: [3, 4, 2, 5, 4, 1, 1], booked: 7, after: 6 },
+    c: { name: 'Example Mechanical', week: [2, 3, 2, 3, 3, 1, 0], booked: 5, after: 5 }
+  };
 
   var calls = [
-    { id: 1, name: 'Marcus Bell', phone: '(317) 555-0142', when: at(0, '7:55'), secs: 161, outcome: 'Booked', after: true,
+    { id: 1, co: 'a', name: 'Marcus Bell', phone: '(317) 555-0142', when: at(0, '7:55'), secs: 161, outcome: 'Booked', after: true,
       summary: 'Furnace is blowing cold air. Booked a no-heat diagnostic for today at 10:30 AM.',
       lines: [
-        ['AI', 'Thanks for calling Sample HVAC. How can I help?'],
+        ['AI', 'Thanks for calling Sample Heating & Air. How can I help?'],
         ['Caller', 'My furnace is running but it is only blowing cold air. The house is at 58 degrees.'],
         ['AI', 'Sorry to hear that. I can get a technician out to diagnose it. Let me check today\'s schedule.'],
         ['AI', 'I have an opening at 10:30 this morning. Does that work?'],
         ['Caller', 'Yes, please.'],
         ['AI', 'You are booked for 10:30 AM at 412 Maple Street. You will get a text confirmation shortly.']
       ] },
-    { id: 2, name: 'Priya Nair', phone: '(317) 555-0118', when: at(0, '6:12'), secs: 112, outcome: 'Lead', after: true,
+    { id: 2, co: 'b', name: 'Priya Nair', phone: '(317) 555-0118', when: at(0, '6:12'), secs: 112, outcome: 'Lead', after: true,
       summary: 'Wants a quote to replace an 18-year-old AC unit before summer. Prefers a call back after 4 PM.',
       lines: [
         ['Caller', 'Hi, I am looking for a price on replacing our air conditioner. It is about 18 years old.'],
@@ -201,7 +208,7 @@
         ['Caller', 'Any time after four.'],
         ['AI', 'Got it. I have passed your details along and someone will call you after 4 PM today.']
       ] },
-    { id: 3, name: 'Tom Kowalski', phone: '(317) 555-0167', when: at(0, '0:48'), secs: 80, outcome: 'Transferred', after: true,
+    { id: 3, co: 'a', name: 'Tom Kowalski', phone: '(317) 555-0167', when: at(0, '0:48'), secs: 80, outcome: 'Transferred', after: true,
       summary: 'Reported a gas smell near the furnace. Told to leave the house and call the gas utility, then transferred to the on-call technician.',
       lines: [
         ['Caller', 'I think I smell gas down by my furnace.'],
@@ -209,7 +216,7 @@
         ['Caller', 'Okay, we are heading out.'],
         ['AI', 'I am connecting you to our on-call technician right now so they can follow up once the utility has cleared the home.']
       ] },
-    { id: 4, name: 'Linda Cho', phone: '(317) 555-0153', when: at(-1, '20:37'), secs: 190, outcome: 'Booked', after: true,
+    { id: 4, co: 'c', name: 'Linda Cho', phone: '(317) 555-0153', when: at(-1, '20:37'), secs: 190, outcome: 'Booked', after: true,
       summary: 'Thermostat screen is blank and the system will not turn on. Booked for tomorrow at 1:00 PM.',
       lines: [
         ['Caller', 'My thermostat screen went blank and nothing is turning on.'],
@@ -219,7 +226,7 @@
         ['Caller', 'That works.'],
         ['AI', 'You are booked for 1:00 PM at 88 Birch Court.']
       ] },
-    { id: 5, name: 'Angela Ruiz', phone: '(317) 555-0190', when: at(-1, '16:20'), secs: 125, outcome: 'Booked', after: false,
+    { id: 5, co: 'a', name: 'Angela Ruiz', phone: '(317) 555-0190', when: at(-1, '16:20'), secs: 125, outcome: 'Booked', after: false,
       summary: 'Scheduled a seasonal tune-up for 9:00 AM.',
       lines: [
         ['Caller', 'I would like to schedule a tune-up before it gets cold.'],
@@ -227,14 +234,14 @@
         ['Caller', 'Perfect.'],
         ['AI', 'You are all set for 9:00 AM at 27 Orchard Lane.']
       ] },
-    { id: 6, name: 'Derek Olsen', phone: '(317) 555-0125', when: at(-1, '13:02'), secs: 58, outcome: 'Answered', after: false,
+    { id: 6, co: 'b', name: 'Derek Olsen', phone: '(317) 555-0125', when: at(-1, '13:02'), secs: 58, outcome: 'Answered', after: false,
       summary: 'Asked whether the company services his area and what the weekend hours are. No follow-up needed.',
       lines: [
         ['Caller', 'Do you all come out to the north side? And are you open on weekends?'],
         ['AI', 'Yes, the north side is in our service area. The office is open Monday through Friday, and this line can book appointments any time.'],
         ['Caller', 'Good to know. Thanks.']
       ] },
-    { id: 7, name: 'James Whitfield', phone: '(317) 555-0109', when: at(-2, '11:15'), secs: 142, outcome: 'Lead', after: false,
+    { id: 7, co: 'c', name: 'James Whitfield', phone: '(317) 555-0109', when: at(-2, '11:15'), secs: 142, outcome: 'Lead', after: false,
       summary: 'Builder looking for a ductwork quote on a new three-bedroom home.',
       lines: [
         ['Caller', 'I am building a three-bedroom house and need a quote on ductwork and install.'],
@@ -242,7 +249,7 @@
         ['Caller', 'Sure, this number is fine.'],
         ['AI', 'Thanks. I have sent the details over and you should hear back within one business day.']
       ] },
-    { id: 8, name: 'Sofia Marino', phone: '(317) 555-0176', when: at(-2, '8:40'), secs: 105, outcome: 'Booked', after: false,
+    { id: 8, co: 'a', name: 'Sofia Marino', phone: '(317) 555-0176', when: at(-2, '8:40'), secs: 105, outcome: 'Booked', after: false,
       summary: 'Outdoor AC unit is making a rattling noise. Booked a service visit for 11:00 AM.',
       lines: [
         ['Caller', 'My outside AC unit has started rattling whenever it kicks on.'],
@@ -250,14 +257,14 @@
         ['Caller', 'Yes.'],
         ['AI', 'Booked for 11:00 AM at 903 Lakeview Drive.']
       ] },
-    { id: 9, name: 'Ben Carter', phone: '(317) 555-0131', when: at(-3, '19:05'), secs: 72, outcome: 'Answered', after: true,
+    { id: 9, co: 'b', name: 'Ben Carter', phone: '(317) 555-0131', when: at(-3, '19:05'), secs: 72, outcome: 'Answered', after: true,
       summary: 'Asked what the maintenance plan includes. No follow-up needed.',
       lines: [
         ['Caller', 'What do I get with your maintenance plan?'],
         ['AI', 'The plan includes two tune-ups a year, one for heating and one for cooling, plus priority scheduling.'],
         ['Caller', 'Okay, I will think about it.']
       ] },
-    { id: 10, name: 'Hannah Brooks', phone: '(317) 555-0184', when: at(-4, '14:30'), secs: 150, outcome: 'Lead', after: false,
+    { id: 10, co: 'c', name: 'Hannah Brooks', phone: '(317) 555-0184', when: at(-4, '14:30'), secs: 150, outcome: 'Lead', after: false,
       summary: 'Interested in switching from a gas furnace to a heat pump. Wants pricing and to hear about rebates.',
       lines: [
         ['Caller', 'We are thinking about replacing our gas furnace with a heat pump. Do you do that?'],
@@ -268,27 +275,36 @@
   ].sort(function (a, b) { return b.when - a.when; });
 
   var leads = [
-    { name: 'Priya Nair', phone: '(317) 555-0118', need: 'AC replacement quote', when: at(0, '6:12'), done: false },
-    { name: 'James Whitfield', phone: '(317) 555-0109', need: 'Ductwork for a new build', when: at(-2, '11:15'), done: true },
-    { name: 'Hannah Brooks', phone: '(317) 555-0184', need: 'Heat pump conversion', when: at(-4, '14:30'), done: false },
-    { name: 'Omar Haddad', phone: '(317) 555-0115', need: 'Whole-home humidifier', when: at(-5, '10:05'), done: true }
+    { co: 'b', name: 'Priya Nair', phone: '(317) 555-0118', need: 'AC replacement quote', when: at(0, '6:12'), done: false },
+    { co: 'c', name: 'James Whitfield', phone: '(317) 555-0109', need: 'Ductwork for a new build', when: at(-2, '11:15'), done: true },
+    { co: 'c', name: 'Hannah Brooks', phone: '(317) 555-0184', need: 'Heat pump conversion', when: at(-4, '14:30'), done: false },
+    { co: 'a', name: 'Omar Haddad', phone: '(317) 555-0115', need: 'Whole-home humidifier', when: at(-5, '10:05'), done: true }
   ];
 
   var appts = [
-    { when: at(0, '10:30'), name: 'Marcus Bell', job: 'No-heat diagnostic', addr: '412 Maple Street', tech: 'Ray' },
-    { when: at(1, '9:00'), name: 'Angela Ruiz', job: 'Seasonal tune-up', addr: '27 Orchard Lane', tech: 'Ray' },
-    { when: at(1, '13:00'), name: 'Linda Cho', job: 'Thermostat not powering on', addr: '88 Birch Court', tech: 'Dana' },
-    { when: at(2, '11:00'), name: 'Sofia Marino', job: 'AC rattling noise', addr: '903 Lakeview Drive', tech: 'Dana' },
-    { when: at(3, '14:30'), name: 'Greg Tanaka', job: 'Furnace inspection', addr: '15 Elm Street', tech: 'Ray' }
+    { when: at(0, '10:30'), co: 'a', name: 'Marcus Bell', job: 'No-heat diagnostic', addr: '412 Maple Street', tech: 'Ray' },
+    { when: at(1, '9:00'), co: 'a', name: 'Angela Ruiz', job: 'Seasonal tune-up', addr: '27 Orchard Lane', tech: 'Ray' },
+    { when: at(1, '13:00'), co: 'c', name: 'Linda Cho', job: 'Thermostat not powering on', addr: '88 Birch Court', tech: 'Luis' },
+    { when: at(2, '11:00'), co: 'a', name: 'Sofia Marino', job: 'AC rattling noise', addr: '903 Lakeview Drive', tech: 'Dana' },
+    { when: at(3, '14:30'), co: 'b', name: 'Greg Tanaka', job: 'Furnace inspection', addr: '15 Elm Street', tech: 'Mia' }
   ];
 
   /* ---------- State ---------- */
-  var state = { tab: 'overview', filter: 'All', query: '', selected: calls[0].id };
+  var state = { co: 'all', tab: 'overview', filter: 'All', query: '', selected: calls[0].id };
   var $ = function (id) { return document.getElementById(id); };
+
+  function mine(list) { return state.co === 'all' ? list : list.filter(function (x) { return x.co === state.co; }); }
+  function coTag(x) { return state.co === 'all' ? '<span class="co">' + esc(companies[x.co].name) + '</span>' : ''; }
+  function renderPicker() {
+    var opts = [['all', 'All companies']].concat(Object.keys(companies).map(function (k) { return [k, companies[k].name]; }));
+    $('picker').innerHTML = opts.map(function (o) {
+      return '<button class="chip" data-co="' + o[0] + '" aria-pressed="' + (state.co === o[0]) + '">' + esc(o[1]) + '</button>';
+    }).join('');
+  }
 
   function callRow(c, current) {
     return '<li><button class="row-btn" data-call="' + c.id + '"' + (current ? ' aria-current="true"' : '') + '>' +
-      '<span class="who">' + esc(c.name) + '</span>' +
+      '<span class="who">' + esc(c.name) + ' ' + coTag(c) + '</span>' +
       '<span class="when">' + dayLabel(c.when) + ', ' + time(c.when) + '</span>' +
       '<span class="sum">' + esc(c.summary) + '</span>' +
       '<span class="badge ' + c.outcome + '">' + c.outcome + '</span>' +
@@ -296,20 +312,26 @@
   }
   function apptRow(a) {
     return '<li class="appt"><span class="time">' + time(a.when) + '</span><span><b>' + esc(a.name) + '</b>, ' + esc(a.job) + '</span>' +
-      '<span></span><span class="detail">' + esc(a.addr) + '. Technician: ' + esc(a.tech) + '</span></li>';
+      '<span></span><span class="detail">' + esc(a.addr) + '. Technician: ' + esc(a.tech) + (state.co === 'all' ? '. ' + esc(companies[a.co].name) : '') + '</span></li>';
   }
 
   /* ---------- Views ---------- */
   function renderOverview() {
+    var week = [0, 0, 0, 0, 0, 0, 0], BOOKED = 0, AFTER_HOURS = 0;
+    (state.co === 'all' ? Object.keys(companies) : [state.co]).forEach(function (k) {
+      var c = companies[k];
+      c.week.forEach(function (n, i) { week[i] += n; });
+      BOOKED += c.booked; AFTER_HOURS += c.after;
+    });
     var total = week.reduce(function (a, b) { return a + b; }, 0);
-    var max = Math.max.apply(null, week);
+    var max = Math.max.apply(null, week) || 1;
     var bars = week.map(function (n, i) {
       var d = at(i - 6, '12:00');
       var label = i === 6 ? 'Today' : d.toLocaleDateString([], { weekday: 'short' });
       return '<div class="bar-col' + (i === 6 ? ' today' : '') + '"><span>' + n + '</span>' +
         '<div class="bar" style="height:' + Math.round(n / max * 100) + '%"></div><span>' + label + '</span></div>';
     }).join('');
-    var next = appts.filter(function (a) { return dayDiff(a.when) <= 1; });
+    var next = mine(appts).filter(function (a) { return dayDiff(a.when) <= 1; });
 
     $('overview').innerHTML =
       '<div class="stats">' +
@@ -322,17 +344,17 @@
         '<div class="stack">' +
           '<div class="panel"><h2>Calls per day</h2><div class="bars" role="img" aria-label="Bar chart of calls per day over the last seven days">' + bars + '</div>' +
           '<p class="chart-note">Today\'s count covers calls so far.</p></div>' +
-          '<div class="panel"><h2>Today and tomorrow</h2><ul class="rows">' + next.map(function (a) {
+          '<div class="panel"><h2>Today and tomorrow</h2>' + (!next.length ? '<p class="empty">Nothing booked for today or tomorrow.</p>' : '<ul class="rows">' + next.map(function (a) {
             return apptRow(a).replace('<span class="time">', '<span class="time">' + (dayDiff(a.when) === 0 ? 'Today ' : 'Tomorrow ') + '<br>');
-          }).join('') + '</ul></div>' +
+          }).join('') + '</ul>') + '</div>' +
         '</div>' +
-        '<div class="panel"><h2>Latest calls</h2><ul class="rows">' + calls.slice(0, 5).map(function (c) { return callRow(c, false); }).join('') + '</ul></div>' +
+        '<div class="panel"><h2>Latest calls</h2><ul class="rows">' + mine(calls).slice(0, 5).map(function (c) { return callRow(c, false); }).join('') + '</ul></div>' +
       '</div>';
   }
 
   function renderCalls() {
     var q = state.query.trim().toLowerCase();
-    var list = calls.filter(function (c) {
+    var list = mine(calls).filter(function (c) {
       return (state.filter === 'All' || c.outcome === state.filter) &&
         (!q || (c.name + ' ' + c.summary + ' ' + c.phone).toLowerCase().indexOf(q) !== -1);
     });
@@ -366,8 +388,8 @@
     $('leads').innerHTML =
       '<div class="panel"><h2>Leads to follow up</h2><div class="scroll"><table>' +
       '<thead><tr><th>Name</th><th>Phone</th><th>Looking for</th><th>Called</th><th>Status</th></tr></thead><tbody>' +
-      leads.map(function (l, i) {
-        return '<tr><td><b>' + esc(l.name) + '</b></td><td>' + esc(l.phone) + '</td><td>' + esc(l.need) + '</td>' +
+      mine(leads).map(function (l) { var i = leads.indexOf(l);
+        return '<tr><td><b>' + esc(l.name) + '</b>' + (state.co === 'all' ? '<br>' + coTag(l) : '') + '</td><td>' + esc(l.phone) + '</td><td>' + esc(l.need) + '</td>' +
           '<td>' + dayLabel(l.when) + '</td>' +
           '<td><button class="status ' + (l.done ? 'done' : 'new') + '" data-lead="' + i + '">' + (l.done ? 'Contacted' : 'Mark contacted') + '</button></td></tr>';
       }).join('') +
@@ -377,7 +399,7 @@
 
   function renderAppts() {
     var html = '', last = '';
-    appts.forEach(function (a) {
+    mine(appts).forEach(function (a) {
       var label = dayLabel(a.when);
       if (label !== last) { html += (last ? '</ul>' : '') + '<h3 class="day-head">' + label + '</h3><ul class="rows">'; last = label; }
       html += apptRow(a);
@@ -401,6 +423,7 @@
     var t = e.target.closest('button');
     if (!t) return;
     if (t.dataset.tab) { show(t.dataset.tab); }
+    else if (t.dataset.co) { state.co = t.dataset.co; renderPicker(); views[state.tab](); }
     else if (t.dataset.call) {
       state.selected = +t.dataset.call;
       if (state.tab !== 'calls') { state.filter = 'All'; state.query = ''; }
@@ -418,6 +441,7 @@
     var s = $('search'); s.focus(); s.setSelectionRange(pos, pos);
   });
 
+  renderPicker();
   show('overview');
 })();
 </script>
