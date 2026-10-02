@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AI Voice Receptionist: owner dashboard demo</title>
+<meta name="description" content="Demo of the owner dashboard from Saathvik Mummaneni's AI Voice Receptionist project. All data is sample data.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #EEF1F5; --surface: #FFFFFF; --ink: #14213D; --muted: #4A5A78;
+    --accent: #D9930B; --line: #CCD4E0; --good: #1F7A4D; --bad: #B3362B; --select: #E3E9F2;
+    --display: "Bricolage Grotesque", "Trebuchet MS", "Segoe UI", sans-serif;
+    --body: "IBM Plex Sans", "Segoe UI", Helvetica, Arial, sans-serif;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #101828; --surface: #18233A; --ink: #E8ECF2; --muted: #9FB0C8;
+      --accent: #F0B030; --line: #2A3854; --good: #5CC98E; --bad: #F0857A; --select: #22304D;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #101828; --surface: #18233A; --ink: #E8ECF2; --muted: #9FB0C8;
+    --accent: #F0B030; --line: #2A3854; --good: #5CC98E; --bad: #F0857A; --select: #22304D;
+  }
+  *, *::before, *::after { box-sizing: inherit; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 1rem; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 68rem; margin: 0 auto; padding: 0 1.25rem; }
+  h1, h2, h3 { font-family: var(--display); line-height: 1.15; margin: 0; }
+  p { margin: 0; }
+  button, input { font: inherit; color: inherit; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+  [hidden] { display: none !important; }
+
+  /* Header */
+  .top { padding-top: 1.75rem; }
+  .brand { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; }
+  .brand h1 { font-size: clamp(1.6rem, 4vw, 2.25rem); font-weight: 700; letter-spacing: -0.02em; }
+  .demo { font-size: 0.8125rem; font-weight: 600; padding: 0.15rem 0.6rem; border: 1.5px solid var(--accent); border-radius: 99px; }
+  .sub { color: var(--muted); margin-top: 0.4rem; max-width: 44em; }
+  .tabs { display: flex; gap: 0.25rem; margin-top: 1.5rem; border-bottom: 1px solid var(--line); overflow-x: auto; }
+  .tabs button { background: none; border: 0; border-bottom: 3px solid transparent; padding: 0.6rem 0.9rem; cursor: pointer; color: var(--muted); font-weight: 500; white-space: nowrap; }
+  .tabs button:hover { color: var(--ink); }
+  .tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
+
+  main { padding-top: 1.75rem; padding-bottom: 2rem; }
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 1.25rem; }
+  .panel h2 { font-size: 1.15rem; font-weight: 700; margin-bottom: 1rem; }
+
+  /* Stats strip */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+  .stat { padding: 1.1rem 1.25rem; border-left: 1px solid var(--line); }
+  .stat:first-child { border-left: 0; }
+  .stat b { display: block; font-family: var(--display); font-size: 2rem; line-height: 1.1; }
+  .stat span { color: var(--muted); font-size: 0.9375rem; }
+
+  .cols { display: grid; grid-template-columns: 1.2fr 1fr; gap: 1.25rem; margin-top: 1.25rem; }
+  .stack { display: grid; gap: 1.25rem; align-content: start; }
+
+  /* Bar chart */
+  .bars { display: flex; align-items: flex-end; gap: 0.6rem; height: 11rem; }
+  .bar-col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; font-size: 0.8125rem; color: var(--muted); }
+  .bar { width: 100%; max-width: 3.25rem; background: var(--ink); border-radius: 4px 4px 0 0; margin: 0.25rem 0 0.4rem; }
+  .bar-col.today .bar { background: var(--accent); }
+  .chart-note { color: var(--muted); font-size: 0.875rem; margin-top: 0.9rem; }
+
+  /* Badges */
+  .badge { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.8125rem; font-weight: 600; white-space: nowrap; }
+  .badge::before { content: ""; width: 0.6rem; height: 0.6rem; border-radius: 50%; background: var(--muted); }
+  .badge.Booked::before { background: var(--good); }
+  .badge.Lead::before { background: var(--accent); }
+  .badge.Transferred::before { background: var(--bad); }
+
+  /* Row lists */
+  .rows { list-style: none; margin: 0; padding: 0; }
+  .rows li + li { border-top: 1px solid var(--line); }
+  .row-btn { display: grid; grid-template-columns: 1fr auto; gap: 0.15rem 1rem; width: 100%; text-align: left; background: none; border: 0; padding: 0.75rem 0.6rem; cursor: pointer; border-radius: 6px; }
+  .row-btn:hover, .row-btn[aria-current="true"] { background: var(--select); }
+  .row-btn .who { font-weight: 600; }
+  .row-btn .when { color: var(--muted); font-size: 0.875rem; text-align: right; }
+  .row-btn .sum { color: var(--muted); font-size: 0.9375rem; grid-column: 1; }
+  .appt { display: grid; grid-template-columns: 5.5rem 1fr; gap: 0.1rem 1rem; padding: 0.75rem 0; }
+  .appt .time { font-weight: 600; }
+  .appt .detail { color: var(--muted); font-size: 0.9375rem; }
+  .day-head { font-size: 1rem; font-weight: 700; margin: 1.25rem 0 0.25rem; }
+  .day-head:first-child { margin-top: 0; }
+
+  /* Calls view */
+  .tools { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 1rem; }
+  .chip { background: var(--surface); border: 1px solid var(--line); border-radius: 99px; padding: 0.3rem 0.85rem; cursor: pointer; font-size: 0.9375rem; }
+  .chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .search { margin-left: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 0.4rem 0.7rem; min-width: 14rem; }
+  .split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 1.25rem; align-items: start; }
+  .empty { color: var(--muted); padding: 1rem 0.6rem; }
+  .meta { color: var(--muted); font-size: 0.9375rem; margin-top: 0.25rem; }
+  .summary { margin-top: 1rem; padding: 0.8rem 1rem; background: var(--bg); border-radius: 8px; }
+  .lines { margin-top: 1.1rem; display: grid; gap: 0.8rem; }
+  .line { display: grid; grid-template-columns: 3.5rem 1fr; gap: 0.75rem; }
+  .line .spk { font-weight: 600; font-size: 0.875rem; padding-top: 0.1rem; }
+  .line.ai .spk { color: var(--accent); }
+
+  /* Leads table */
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; min-width: 38rem; }
+  th { text-align: left; font-weight: 600; color: var(--muted); font-size: 0.875rem; padding: 0 0.75rem 0.6rem 0; border-bottom: 1px solid var(--line); }
+  td { padding: 0.8rem 0.75rem 0.8rem 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  .status { border: 1.5px solid var(--line); background: none; border-radius: 6px; padding: 0.25rem 0.7rem; cursor: pointer; font-weight: 600; font-size: 0.875rem; white-space: nowrap; }
+  .status.new { border-color: var(--accent); }
+  .status.done { color: var(--good); border-color: var(--good); }
+  .hint { color: var(--muted); font-size: 0.875rem; margin-top: 0.9rem; }
+
+  footer { color: var(--muted); font-size: 0.875rem; padding-top: 0.5rem; padding-bottom: 2.5rem; }
+
+  @media (max-width: 52rem) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .stat:nth-child(3) { border-left: 0; }
+    .stat:nth-child(n+3) { border-top: 1px solid var(--line); }
+    .cols, .split { grid-template-columns: 1fr; }
+    .search { margin-left: 0; width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<header class="wrap top">
+  <div class="brand">
+    <h1>Sample HVAC Co.</h1>
+    <span class="demo">Demo data</span>
+  </div>
+  <p class="sub">The owner dashboard from my AI Voice Receptionist project. Every name, phone number, and call on this page is made up for the demo.</p>
+  <div class="tabs" role="tablist" aria-label="Dashboard sections">
+    <button role="tab" data-tab="overview" aria-selected="true">Overview</button>
+    <button role="tab" data-tab="calls" aria-selected="false">Calls</button>
+    <button role="tab" data-tab="leads" aria-selected="false">Leads</button>
+    <button role="tab" data-tab="appointments" aria-selected="false">Appointments</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <section id="overview" role="tabpanel"></section>
+  <section id="calls" role="tabpanel" hidden></section>
+  <section id="leads" role="tabpanel" hidden></section>
+  <section id="appointments" role="tabpanel" hidden></section>
+</main>
+
+<footer class="wrap">
+  <p>Built by Saathvik Mummaneni. The production system runs on a Python backend with PostgreSQL; this page shows the dashboard with sample data.</p>
+</footer>
+
+<script>
+(function () {
+  var now = new Date();
+  function at(dayOffset, hhmm) {
+    var p = hhmm.split(':');
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate() + dayOffset, +p[0], +p[1]);
+  }
+  function dayDiff(d) {
+    var a = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    var b = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return Math.round((a - b) / 864e5);
+  }
+  function dayLabel(d) {
+    var n = dayDiff(d);
+    if (n === 0) return 'Today';
+    if (n === -1) return 'Yesterday';
+    if (n === 1) return 'Tomorrow';
+    return d.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' });
+  }
+  function time(d) { return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); }
+  function dur(s) { return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+  /* ---------- Sample data ---------- */
+  var week = [17, 21, 13, 24, 19, 12, 3];   // calls per day, six days ago through today
+  var BOOKED = 41, AFTER_HOURS = 37;
+
+  var calls = [
+    { id: 1, name: 'Marcus Bell', phone: '(317) 555-0142', when: at(0, '7:55'), secs: 161, outcome: 'Booked', after: true,
+      summary: 'Furnace is blowing cold air. Booked a no-heat diagnostic for today at 10:30 AM.',
+      lines: [
+        ['AI', 'Thanks for calling Sample HVAC. How can I help?'],
+        ['Caller', 'My furnace is running but it is only blowing cold air. The house is at 58 degrees.'],
+        ['AI', 'Sorry to hear that. I can get a technician out to diagnose it. Let me check today\'s schedule.'],
+        ['AI', 'I have an opening at 10:30 this morning. Does that work?'],
+        ['Caller', 'Yes, please.'],
+        ['AI', 'You are booked for 10:30 AM at 412 Maple Street. You will get a text confirmation shortly.']
+      ] },
+    { id: 2, name: 'Priya Nair', phone: '(317) 555-0118', when: at(0, '6:12'), secs: 112, outcome: 'Lead', after: true,
+      summary: 'Wants a quote to replace an 18-year-old AC unit before summer. Prefers a call back after 4 PM.',
+      lines: [
+        ['Caller', 'Hi, I am looking for a price on replacing our air conditioner. It is about 18 years old.'],
+        ['AI', 'I can help with that. Replacement quotes need a short home visit, so I will have the owner call you to set one up.'],
+        ['AI', 'What is the best time to reach you?'],
+        ['Caller', 'Any time after four.'],
+        ['AI', 'Got it. I have passed your details along and someone will call you after 4 PM today.']
+      ] },
+    { id: 3, name: 'Tom Kowalski', phone: '(317) 555-0167', when: at(0, '0:48'), secs: 80, outcome: 'Transferred', after: true,
+      summary: 'Reported a gas smell near the furnace. Told to leave the house and call the gas utility, then transferred to the on-call technician.',
+      lines: [
+        ['Caller', 'I think I smell gas down by my furnace.'],
+        ['AI', 'Please leave the house now and call your gas utility\'s emergency line or 911 from outside. Do not use any switches on the way out.'],
+        ['Caller', 'Okay, we are heading out.'],
+        ['AI', 'I am connecting you to our on-call technician right now so they can follow up once the utility has cleared the home.']
+      ] },
+    { id: 4, name: 'Linda Cho', phone: '(317) 555-0153', when: at(-1, '20:37'), secs: 190, outcome: 'Booked', after: true,
+      summary: 'Thermostat screen is blank and the system will not turn on. Booked for tomorrow at 1:00 PM.',
+      lines: [
+        ['Caller', 'My thermostat screen went blank and nothing is turning on.'],
+        ['AI', 'Have you had a chance to try fresh batteries in the thermostat?'],
+        ['Caller', 'I did. Still nothing.'],
+        ['AI', 'Then it is worth having a technician look at it. I have 1:00 PM available tomorrow. Would you like that slot?'],
+        ['Caller', 'That works.'],
+        ['AI', 'You are booked for 1:00 PM at 88 Birch Court.']
+      ] },
+    { id: 5, name: 'Angela Ruiz', phone: '(317) 555-0190', when: at(-1, '16:20'), secs: 125, outcome: 'Booked', after: false,
+      summary: 'Scheduled a seasonal tune-up for 9:00 AM.',
+      lines: [
+        ['Caller', 'I would like to schedule a tune-up before it gets cold.'],
+        ['AI', 'Happy to. The next morning opening is 9:00 AM. Does that work for you?'],
+        ['Caller', 'Perfect.'],
+        ['AI', 'You are all set for 9:00 AM at 27 Orchard Lane.']
+      ] },
+    { id: 6, name: 'Derek Olsen', phone: '(317) 555-0125', when: at(-1, '13:02'), secs: 58, outcome: 'Answered', after: false,
+      summary: 'Asked whether the company services his area and what the weekend hours are. No follow-up needed.',
+      lines: [
+        ['Caller', 'Do you all come out to the north side? And are you open on weekends?'],
+        ['AI', 'Yes, the north side is in our service area. The office is open Monday through Friday, and this line can book appointments any time.'],
+        ['Caller', 'Good to know. Thanks.']
+      ] },
+    { id: 7, name: 'James Whitfield', phone: '(317) 555-0109', when: at(-2, '11:15'), secs: 142, outcome: 'Lead', after: false,
+      summary: 'Builder looking for a ductwork quote on a new three-bedroom home.',
+      lines: [
+        ['Caller', 'I am building a three-bedroom house and need a quote on ductwork and install.'],
+        ['AI', 'That is something the owner quotes directly. Can I take the address and a good number to reach you?'],
+        ['Caller', 'Sure, this number is fine.'],
+        ['AI', 'Thanks. I have sent the details over and you should hear back within one business day.']
+      ] },
+    { id: 8, name: 'Sofia Marino', phone: '(317) 555-0176', when: at(-2, '8:40'), secs: 105, outcome: 'Booked', after: false,
+      summary: 'Outdoor AC unit is making a rattling noise. Booked a service visit for 11:00 AM.',
+      lines: [
+        ['Caller', 'My outside AC unit has started rattling whenever it kicks on.'],
+        ['AI', 'A technician should take a look at that. I have 11:00 AM open later this week. Would you like it?'],
+        ['Caller', 'Yes.'],
+        ['AI', 'Booked for 11:00 AM at 903 Lakeview Drive.']
+      ] },
+    { id: 9, name: 'Ben Carter', phone: '(317) 555-0131', when: at(-3, '19:05'), secs: 72, outcome: 'Answered', after: true,
+      summary: 'Asked what the maintenance plan includes. No follow-up needed.',
+      lines: [
+        ['Caller', 'What do I get with your maintenance plan?'],
+        ['AI', 'The plan includes two tune-ups a year, one for heating and one for cooling, plus priority scheduling.'],
+        ['Caller', 'Okay, I will think about it.']
+      ] },
+    { id: 10, name: 'Hannah Brooks', phone: '(317) 555-0184', when: at(-4, '14:30'), secs: 150, outcome: 'Lead', after: false,
+      summary: 'Interested in switching from a gas furnace to a heat pump. Wants pricing and to hear about rebates.',
+      lines: [
+        ['Caller', 'We are thinking about replacing our gas furnace with a heat pump. Do you do that?'],
+        ['AI', 'We do. Pricing depends on the home, so the owner will call you to go over options and any rebates.'],
+        ['Caller', 'Great. Mornings are best.'],
+        ['AI', 'Noted. I have passed that along.']
+      ] }
+  ].sort(function (a, b) { return b.when - a.when; });
+
+  var leads = [
+    { name: 'Priya Nair', phone: '(317) 555-0118', need: 'AC replacement quote', when: at(0, '6:12'), done: false },
+    { name: 'James Whitfield', phone: '(317) 555-0109', need: 'Ductwork for a new build', when: at(-2, '11:15'), done: true },
+    { name: 'Hannah Brooks', phone: '(317) 555-0184', need: 'Heat pump conversion', when: at(-4, '14:30'), done: false },
+    { name: 'Omar Haddad', phone: '(317) 555-0115', need: 'Whole-home humidifier', when: at(-5, '10:05'), done: true }
+  ];
+
+  var appts = [
+    { when: at(0, '10:30'), name: 'Marcus Bell', job: 'No-heat diagnostic', addr: '412 Maple Street', tech: 'Ray' },
+    { when: at(1, '9:00'), name: 'Angela Ruiz', job: 'Seasonal tune-up', addr: '27 Orchard Lane', tech: 'Ray' },
+    { when: at(1, '13:00'), name: 'Linda Cho', job: 'Thermostat not powering on', addr: '88 Birch Court', tech: 'Dana' },
+    { when: at(2, '11:00'), name: 'Sofia Marino', job: 'AC rattling noise', addr: '903 Lakeview Drive', tech: 'Dana' },
+    { when: at(3, '14:30'), name: 'Greg Tanaka', job: 'Furnace inspection', addr: '15 Elm Street', tech: 'Ray' }
+  ];
+
+  /* ---------- State ---------- */
+  var state = { tab: 'overview', filter: 'All', query: '', selected: calls[0].id };
+  var $ = function (id) { return document.getElementById(id); };
+
+  function callRow(c, current) {
+    return '<li><button class="row-btn" data-call="' + c.id + '"' + (current ? ' aria-current="true"' : '') + '>' +
+      '<span class="who">' + esc(c.name) + '</span>' +
+      '<span class="when">' + dayLabel(c.when) + ', ' + time(c.when) + '</span>' +
+      '<span class="sum">' + esc(c.summary) + '</span>' +
+      '<span class="badge ' + c.outcome + '">' + c.outcome + '</span>' +
+      '</button></li>';
+  }
+  function apptRow(a) {
+    return '<li class="appt"><span class="time">' + time(a.when) + '</span><span><b>' + esc(a.name) + '</b>, ' + esc(a.job) + '</span>' +
+      '<span></span><span class="detail">' + esc(a.addr) + '. Technician: ' + esc(a.tech) + '</span></li>';
+  }
+
+  /* ---------- Views ---------- */
+  function renderOverview() {
+    var total = week.reduce(function (a, b) { return a + b; }, 0);
+    var max = Math.max.apply(null, week);
+    var bars = week.map(function (n, i) {
+      var d = at(i - 6, '12:00');
+      var label = i === 6 ? 'Today' : d.toLocaleDateString([], { weekday: 'short' });
+      return '<div class="bar-col' + (i === 6 ? ' today' : '') + '"><span>' + n + '</span>' +
+        '<div class="bar" style="height:' + Math.round(n / max * 100) + '%"></div><span>' + label + '</span></div>';
+    }).join('');
+    var next = appts.filter(function (a) { return dayDiff(a.when) <= 1; });
+
+    $('overview').innerHTML =
+      '<div class="stats">' +
+        '<div class="stat"><b>' + total + '</b><span>Calls in the last 7 days</span></div>' +
+        '<div class="stat"><b>' + BOOKED + '</b><span>Appointments booked</span></div>' +
+        '<div class="stat"><b>' + Math.round(BOOKED / total * 100) + '%</b><span>Of calls ended in a booking</span></div>' +
+        '<div class="stat"><b>' + AFTER_HOURS + '</b><span>Calls answered after hours</span></div>' +
+      '</div>' +
+      '<div class="cols">' +
+        '<div class="stack">' +
+          '<div class="panel"><h2>Calls per day</h2><div class="bars" role="img" aria-label="Bar chart of calls per day over the last seven days">' + bars + '</div>' +
+          '<p class="chart-note">Today\'s count covers calls so far.</p></div>' +
+          '<div class="panel"><h2>Today and tomorrow</h2><ul class="rows">' + next.map(function (a) {
+            return apptRow(a).replace('<span class="time">', '<span class="time">' + (dayDiff(a.when) === 0 ? 'Today ' : 'Tomorrow ') + '<br>');
+          }).join('') + '</ul></div>' +
+        '</div>' +
+        '<div class="panel"><h2>Latest calls</h2><ul class="rows">' + calls.slice(0, 5).map(function (c) { return callRow(c, false); }).join('') + '</ul></div>' +
+      '</div>';
+  }
+
+  function renderCalls() {
+    var q = state.query.trim().toLowerCase();
+    var list = calls.filter(function (c) {
+      return (state.filter === 'All' || c.outcome === state.filter) &&
+        (!q || (c.name + ' ' + c.summary + ' ' + c.phone).toLowerCase().indexOf(q) !== -1);
+    });
+    var sel = list.filter(function (c) { return c.id === state.selected; })[0] || list[0];
+    var chips = ['All', 'Booked', 'Lead', 'Answered', 'Transferred'].map(function (f) {
+      return '<button class="chip" data-filter="' + f + '" aria-pressed="' + (state.filter === f) + '">' + f + '</button>';
+    }).join('');
+    var detail = !sel ? '<p class="empty">Pick a call to read its transcript.</p>' :
+      '<h2>' + esc(sel.name) + '</h2>' +
+      '<p class="meta">' + esc(sel.phone) + '</p>' +
+      '<p class="meta">' + dayLabel(sel.when) + ' at ' + time(sel.when) + ', ' + dur(sel.secs) + ' long' + (sel.after ? ', after hours' : '') + '</p>' +
+      '<p class="meta"><span class="badge ' + sel.outcome + '">' + sel.outcome + '</span></p>' +
+      '<p class="summary">' + esc(sel.summary) + '</p>' +
+      '<div class="lines">' + sel.lines.map(function (l) {
+        return '<div class="line' + (l[0] === 'AI' ? ' ai' : '') + '"><span class="spk">' + l[0] + '</span><span>' + esc(l[1]) + '</span></div>';
+      }).join('') + '</div>';
+
+    $('calls').innerHTML =
+      '<div class="tools">' + chips +
+        '<input class="search" id="search" type="search" placeholder="Search calls" aria-label="Search calls" value="' + esc(state.query) + '">' +
+      '</div>' +
+      '<div class="split">' +
+        '<div class="panel">' + (list.length ?
+          '<ul class="rows">' + list.map(function (c) { return callRow(c, sel && c.id === sel.id); }).join('') + '</ul>' :
+          '<p class="empty">No calls match. Clear the search or choose a different filter.</p>') + '</div>' +
+        '<div class="panel" id="detail">' + detail + '</div>' +
+      '</div>';
+  }
+
+  function renderLeads() {
+    $('leads').innerHTML =
+      '<div class="panel"><h2>Leads to follow up</h2><div class="scroll"><table>' +
+      '<thead><tr><th>Name</th><th>Phone</th><th>Looking for</th><th>Called</th><th>Status</th></tr></thead><tbody>' +
+      leads.map(function (l, i) {
+        return '<tr><td><b>' + esc(l.name) + '</b></td><td>' + esc(l.phone) + '</td><td>' + esc(l.need) + '</td>' +
+          '<td>' + dayLabel(l.when) + '</td>' +
+          '<td><button class="status ' + (l.done ? 'done' : 'new') + '" data-lead="' + i + '">' + (l.done ? 'Contacted' : 'Mark contacted') + '</button></td></tr>';
+      }).join('') +
+      '</tbody></table></div>' +
+      '<p class="hint">The receptionist logs a lead whenever a caller needs a quote. Select a status to change it.</p></div>';
+  }
+
+  function renderAppts() {
+    var html = '', last = '';
+    appts.forEach(function (a) {
+      var label = dayLabel(a.when);
+      if (label !== last) { html += (last ? '</ul>' : '') + '<h3 class="day-head">' + label + '</h3><ul class="rows">'; last = label; }
+      html += apptRow(a);
+    });
+    $('appointments').innerHTML = '<div class="panel"><h2>Appointments booked by the receptionist</h2>' + html + '</ul></div>';
+  }
+
+  var views = { overview: renderOverview, calls: renderCalls, leads: renderLeads, appointments: renderAppts };
+
+  function show(tab) {
+    state.tab = tab;
+    document.querySelectorAll('.tabs button').forEach(function (b) {
+      b.setAttribute('aria-selected', String(b.dataset.tab === tab));
+    });
+    Object.keys(views).forEach(function (k) { $(k).hidden = k !== tab; });
+    views[tab]();
+  }
+
+  /* ---------- Events ---------- */
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest('button');
+    if (!t) return;
+    if (t.dataset.tab) { show(t.dataset.tab); }
+    else if (t.dataset.call) {
+      state.selected = +t.dataset.call;
+      if (state.tab !== 'calls') { state.filter = 'All'; state.query = ''; }
+      show('calls');
+      if (window.matchMedia('(max-width: 52rem)').matches) { $('detail').scrollIntoView({ block: 'start' }); }
+    }
+    else if (t.dataset.filter) { state.filter = t.dataset.filter; renderCalls(); }
+    else if (t.dataset.lead) { var l = leads[+t.dataset.lead]; l.done = !l.done; renderLeads(); }
+  });
+  document.addEventListener('input', function (e) {
+    if (e.target.id !== 'search') return;
+    state.query = e.target.value;
+    var pos = e.target.selectionStart;
+    renderCalls();
+    var s = $('search'); s.focus(); s.setSelectionRange(pos, pos);
+  });
+
+  show('overview');
+})();
+</script>
+</body>
+</html>
